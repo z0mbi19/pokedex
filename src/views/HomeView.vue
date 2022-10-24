@@ -1,45 +1,9 @@
 <template>
   <div>
-    <input v-model="search" placeholder="Search for Pokemon" />
-    <button @click="fetchPokemon">Search</button>
+    <input class="search" v-model="search" placeholder="Search for Pokemon" />
+    <button class="btn" @click="fetchPokemon">Search</button>
   </div>
-  <div v-if="pokemon" class="card">
-    <img :src="pokemon.sprites.front_default" :alt="pokemon.name" />
-    <p>{{ pokemon.name }}</p>
-    <div>
-      <li>Base experience: {{ pokemon.base_experience }}</li>
-      <li>
-        HP: <progress :value="pokemon.stats[0].base_stat" max="255" />
-        {{ pokemon.stats[0].base_stat }}
-      </li>
-      <li>
-        Attack: <progress :value="pokemon.stats[1].base_stat" max="255" />
-        {{ pokemon.stats[1].base_stat }}
-      </li>
-      <li>
-        Defense: <progress :value="pokemon.stats[2].base_stat" max="255" />
-        {{ pokemon.stats[2].base_stat }}
-      </li>
-      <li>
-        Special-attack:
-        <progress :value="pokemon.stats[3].base_stat" max="255" />
-        {{ pokemon.stats[3].base_stat }}
-      </li>
-      <li>
-        Special-defense:
-        <progress :value="pokemon.stats[4].base_stat" max="255" />
-        {{ pokemon.stats[4].base_stat }}
-      </li>
-      <li>
-        Speed: <progress :value="pokemon.stats[5].base_stat" max="255" />
-        {{ pokemon.stats[5].base_stat }}
-      </li>
-      <details>
-        <summary>Moves</summary>
-        <li v-for="move of moves" :key="move">{{ move }}</li>
-      </details>
-    </div>
-  </div>
+
   <div class="list">
     <p v-if="!pokemons">Use the field to search Pokemon</p>
 
@@ -51,7 +15,7 @@
       :key="pokemon.name"
     >
       <img :src="pokemon.img" :alt="pokemon.name" />
-      <p>
+      <p class="capitalize">
         {{ pokemon.name }}
       </p>
     </div>
@@ -59,8 +23,48 @@
   <div v-if="open" class="card modal">
     <img :src="modalUrl" :alt="modelName" />
 
-    <p>{{ modelName }}</p>
-    <button @click="open = false">Close</button>
+    <p class="capitalize">{{ modelName }}</p>
+    <li>Base experience: {{ modalPokemon.base_experience }}</li>
+    <div class="list">
+      <p for="hp">
+        HP:
+        <progress id="hp" :value="modalPokemon.stats[0].base_stat" max="255" />
+        {{ modalPokemon.stats[0].base_stat }}
+      </p>
+      <p>
+        Attack:
+        <progress :value="modalPokemon.stats[1].base_stat" max="255" />
+        {{ modalPokemon.stats[1].base_stat }}
+      </p>
+      <p>
+        Defense:
+        <progress :value="modalPokemon.stats[2].base_stat" max="255" />
+        {{ modalPokemon.stats[2].base_stat }}
+      </p>
+      <p>
+        Special-attack:
+        <progress :value="modalPokemon.stats[3].base_stat" max="255" />
+        {{ modalPokemon.stats[3].base_stat }}
+      </p>
+      <p>
+        Special-defense:
+        <progress :value="modalPokemon.stats[4].base_stat" max="255" />
+        {{ modalPokemon.stats[4].base_stat }}
+      </p>
+      <p>
+        Speed: <progress :value="modalPokemon.stats[5].base_stat" max="255" />
+        {{ modalPokemon.stats[5].base_stat }}
+      </p>
+    </div>
+    <details>
+      <summary>Moves</summary>
+      <div class="listMoves">
+        <p class="capitalize movesStyles" v-for="move of moves" :key="move">
+          {{ move }}
+        </p>
+      </div>
+    </details>
+    <button class="btn" @click="open = false">Close</button>
   </div>
 </template>
 
@@ -72,7 +76,6 @@ export default {
   data() {
     return {
       pokemons: null,
-      pokemon: null,
       moves: null,
       search: "",
       img: null,
@@ -80,6 +83,7 @@ export default {
       open: false,
       modelName: "",
       modalUrl: "",
+      modalPokemon: null,
     };
   },
   methods: {
@@ -97,9 +101,21 @@ export default {
         `https://pokeapi.co/api/v2/pokemon-species/${this.search}`
       );
       const evolution = await axios.get(species.data.evolution_chain.url);
+
+      let evolveTo = "";
+
       const pokeNames = evolution.data.chain.evolves_to.map((evolve) => {
+        evolveTo = evolve.evolves_to;
         return `https://pokeapi.co/api/v2/pokemon/${evolve.species.name}`;
       });
+
+      evolveTo.map((x) => {
+        pokeNames.push(`https://pokeapi.co/api/v2/pokemon/${x.species.name}`);
+      });
+
+      pokeNames.unshift(
+        `https://pokeapi.co/api/v2/pokemon/${evolution.data.chain.species.name}`
+      );
 
       const list = axios.all(pokeNames.map((url) => axios.get(url))).then(
         axios.spread((...res) => {
@@ -109,8 +125,6 @@ export default {
           return data;
         })
       );
-
-      console.log(list);
 
       this.pokemons = await list;
 
@@ -123,7 +137,7 @@ export default {
       const getstatus = await axios.get(
         `https://pokeapi.co/api/v2/pokemon/${name}`
       );
-      console.log(getstatus.data);
+      this.modalPokemon = getstatus.data;
     },
   },
 };
@@ -132,20 +146,59 @@ export default {
 .card {
   background-color: white;
   border-radius: 5px;
+  padding: 10px;
+
   margin: 10px;
+}
+.capitalize {
+  text-transform: capitalize;
 }
 .list {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-around;
   align-items: center;
+  padding: 10px;
 }
+.listMoves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: center;
+  margin: 10px;
+}
+.movesStyles {
+  box-shadow: 3px 5px lightgray;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px;
+}
+
+.btn {
+  padding: 10px;
+  background-color: blue;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  box-shadow: 3px 5px lightgray;
+}
+
+.search {
+  padding: 9px;
+  border: none;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+
 .modal {
   position: fixed;
   z-index: 999;
-  top: 20%;
-  left: 50%;
-  width: 300px;
-  margin-left: -150px;
+  padding: 10px;
+  height: 500px;
+  overflow: auto;
+  top: 5%;
+  left: 10%;
+  right: 10%;
+  box-shadow: 2px 5px lightgray;
 }
 </style>
