@@ -98,7 +98,7 @@ export default {
       });
       this.moves = getMoves;
       const species = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon-species/${this.search}`
+        `https://pokeapi.co/api/v2/pokemon-species/${this.search.toLowerCase()}`
       );
       const evolution = await axios.get(species.data.evolution_chain.url);
 
