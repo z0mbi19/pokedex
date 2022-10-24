@@ -5,7 +5,9 @@
   </div>
 
   <div class="list">
-    <p v-if="!pokemons">Use the field to search Pokemon</p>
+    <p v-if="!pokemons && !error">Use the field to search Pokemon</p>
+
+    <p v-if="!pokemons && error">{{ error }}</p>
 
     <div
       @click="statusPokemon(pokemon.name, pokemon.img)"
@@ -84,51 +86,52 @@ export default {
       modelName: "",
       modalUrl: "",
       modalPokemon: null,
+      error: null,
     };
   },
   methods: {
     async fetchPokemon() {
       this.loading = true;
-      const pokemonSearch = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon/${this.search}`
-      );
-      this.pokemon = pokemonSearch.data;
-      const getMoves = pokemonSearch.data.moves.map((move) => {
-        return move.move.name;
-      });
-      this.moves = getMoves;
-      const species = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon-species/${this.search.toLowerCase()}`
-      );
-      const evolution = await axios.get(species.data.evolution_chain.url);
 
-      let evolveTo = "";
+      const species = await axios
+        .get(
+          `https://pokeapi.co/api/v2/pokemon-species/${this.search.toLowerCase()}`
+        )
+        .then()
+        .catch((e) => (this.error = e.response.data));
 
-      const pokeNames = evolution.data.chain.evolves_to.map((evolve) => {
-        evolveTo = evolve.evolves_to;
-        return `https://pokeapi.co/api/v2/pokemon/${evolve.species.name}`;
-      });
+      console.log(species);
+      if (species !== "Not Found") {
+        const evolution = await axios.get(species.data.evolution_chain.url);
 
-      evolveTo.map((x) => {
-        pokeNames.push(`https://pokeapi.co/api/v2/pokemon/${x.species.name}`);
-      });
+        let evolveTo = "";
 
-      pokeNames.unshift(
-        `https://pokeapi.co/api/v2/pokemon/${evolution.data.chain.species.name}`
-      );
+        const pokeNames = evolution.data.chain.evolves_to.map((evolve) => {
+          evolveTo = evolve.evolves_to;
+          return `https://pokeapi.co/api/v2/pokemon/${evolve.species.name}`;
+        });
 
-      const list = axios.all(pokeNames.map((url) => axios.get(url))).then(
-        axios.spread((...res) => {
-          const data = res.map((x) => {
-            return { name: x.data.name, img: x.data.sprites.front_default };
-          });
-          return data;
-        })
-      );
+        evolveTo.map((x) => {
+          pokeNames.push(`https://pokeapi.co/api/v2/pokemon/${x.species.name}`);
+        });
 
-      this.pokemons = await list;
+        pokeNames.unshift(
+          `https://pokeapi.co/api/v2/pokemon/${evolution.data.chain.species.name}`
+        );
 
-      this.loading = false;
+        const list = axios.all(pokeNames.map((url) => axios.get(url))).then(
+          axios.spread((...res) => {
+            const data = res.map((x) => {
+              return { name: x.data.name, img: x.data.sprites.front_default };
+            });
+            return data;
+          })
+        );
+
+        this.pokemons = await list;
+
+        this.loading = false;
+      }
     },
     async statusPokemon(name, url) {
       this.open = true;
