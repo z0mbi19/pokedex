@@ -99,8 +99,6 @@ export default {
         )
         .then()
         .catch((e) => (this.error = e.response.data));
-
-      console.log(species);
       if (species !== "Not Found") {
         const evolution = await axios.get(species.data.evolution_chain.url);
 
@@ -141,6 +139,11 @@ export default {
         `https://pokeapi.co/api/v2/pokemon/${name}`
       );
       this.modalPokemon = getstatus.data;
+      console.log(getstatus.data);
+      const moves = getstatus.data.moves.map((move) => {
+        return move.move.name;
+      });
+      this.moves = moves;
     },
   },
 };
